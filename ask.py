@@ -76,7 +76,6 @@ if __name__ == '__main__':
     reply_y = kwargs['--yes']
     reply_n = kwargs['--no']
     engine = kwargs['--engine']
-    print(engine)
     if not engine in available_engines():
         engine=ENGINE_DEFAULT
     if not msg:
