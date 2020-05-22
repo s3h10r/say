@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+asks a yes/no question via audio (text-to-speech).
+returncode reflects answer in common unix-style (0 == yes/ok, 1 == nope)
+
 Usage:
 ask [<msg>] [--yes=<reply_yes>] [--no=<reply_no>] [--engine=<tts-engine>]
 
@@ -13,8 +16,8 @@ Options:
     --version      Print version
 
 Examples:
-    $ ask.py "Do you want to play a game?" && echo "Splendid! :)"
-    $ ask.py "Do you want to play a game?" --yes="Splendid, let's play!" --no="Okidoki. Maybe another time."
+    $ ask "Do you want to play a game?" && echo "Splendid! :)"
+    $ ask "Do you want to play a game?" --yes="Splendid, let's play!" --no="Okidoki. Maybe another time."
 """
 import logging
 import sys

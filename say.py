@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+converts given text/phrase to speech (tts). supports different tts-engines.
+
 Usage:
-ask [<msg>] [--engine=<tts-engine>]
+say [<msg>] [--engine=<tts-engine>]
 
 Options:
     --engine=<str> TTS-engine to use {'google', 'espeak', 'festival'}
@@ -11,9 +13,9 @@ Options:
     --version      Print version
 
 Examples:
-    $ say.py "Hello world!" --engine espeak
-    $ say.py "Look Dave, I can see you're really upset about this." --engine espeak
-    $ say.py "This tts-engine sounds more human but requires to be online." --engine google
+    $ say "Hello world!" --engine espeak
+    $ say "Look Dave, I can see you're really upset about this." --engine espeak
+    $ say "This tts-engine sounds more human but requires to be online." --engine google
 """
 import logging
 import os
@@ -29,7 +31,7 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-__version__ = (0,1,24)
+__version__ = (0,1,25)
 _VERBOSITY  = 0
 _ENGINES    = ['festival', 'espeak', 'dummy']
 ENGINE_DEFAULT=_ENGINES[1]
@@ -160,6 +162,7 @@ if __name__ == '__main__':
         msg = kwargs['<msg>']
     engine = kwargs['--engine']
     if not engine in available_engines():
+        logger.info("requested --engine='{}' not available. using engine '{}' instead".format(engine,ENGINE_DEFAULT))
         engine=ENGINE_DEFAULT
     if not msg:
         if _VERBOSITY > 0:
