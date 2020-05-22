@@ -1,5 +1,5 @@
 #!/bin/bash
-# -- 1. installation
+echo "-- 1. installation"
 git clone https://github.com/s3h10r/say
 if [ "$EUID" -eq 0 ] 
 then
@@ -13,10 +13,9 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
-# -- 2. doing a quick test
+echo "-- 2. doing a quick test"
+echo "Hi! Nice to meet you. I am the default-tts engine." | ./say
 
-echo "if you can't hear this something is wrong. don't panic!" | ./say
-
-# -- 3. listening to available / supported tts-engines on your system
-
+echo "-- 3. playing all available / supported tts-engines on your system"
+cat say-example.py
 ./say-example.py
