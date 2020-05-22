@@ -46,7 +46,7 @@ echo "don't panic!" | ./say
 or do
 
 ```console
-$ wget -O - https://github.com/s3h10r/say/blob/master/install.sh | bash
+$ wget -O - https://raw.githubusercontent.com/s3h10r/say/master/install.sh | bash
 ```
 
 
