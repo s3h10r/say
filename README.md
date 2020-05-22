@@ -1,24 +1,34 @@
 say - lightweight tts for shell & scripts
 =========================================
 
-`say` makes 
+`say` makes text-to-speech (tts) accessible to your favorite shell 
+and is easy to use from within scripts. 
+it provides commands which can be used in shellscripts and exports
+functions wich are usable in python.
+
+the tts-engines are:
 
   * 90s retro style (espeak, festival, pico)
   * modern (google speech api)
 
-text-to-speech (tts) accessible to your favorite shell 
-and is easy to use from within scripts. 
-
-it provides commands which can be used in shellscripts and 
-exports functions wich are usable in python.
+`say` works fine on RaspberryPis (Raspbian-/Debian-/Linux).
 
 
 installation
 ============
 
-To clone the latest code-repository to the current working directory of 
-your (debian-/ubuntu-linux-) machine and to run the examples
-either copy'n'paste the following into your terminal
+To install the latest version into the current working directory of 
+your (debian-/linux) machine do:
+
+```console
+$ wget -O - https://raw.githubusercontent.com/s3h10r/say/master/install.sh | bash
+```
+Assuming you have `git` and `wget` already installed
+this clones the code-repository, installs the dependencies and runs
+some basic examples.
+
+Otherwise if you prefer doing things manually or want to be on the safe side
+you can also copy'n'paste the following into your terminal:
 
 ```bash
 #!/bin/bash
@@ -47,13 +57,6 @@ echo "don't panic!" | ./say
 ./say-example.py
 ```
 
-or do
-
-```console
-$ wget -O - https://raw.githubusercontent.com/s3h10r/say/master/install.sh | bash
-```
-
-
 usage 
 =====
 
@@ -76,19 +79,12 @@ $ ./ask.py "Do you want to play a game?" && echo "splendid! (:"
 $ ./ask.py "do you want to play a game?" --yes="splendid!" --no="okidoki. maybe another time." --engine="google"
 ```
 
-
-<!--
-```
-# -- **TODO** args/docopts
-
-$ echo "Look Dave, I can see you're really upset about this." | ./say --engine=espeak --scrolling=True --fps=25
-```
-btw. a graphical version (experimental):
-
 ```console
-$ ./xsay.py "This is because we can. Have fun!""
+# -- **experimental** a graphical version (xask)
+
+$ ./example-yesno.sh
 ```
--->
+
 
 python
 ------
@@ -111,11 +107,83 @@ for word in msg_tpl.substitute({'engine': 'crazy'}).split():
     say(word, engines[random.randint(0, len(engines)-1)])
 ```
 
+
 help
 ====
 
+```
+$ pydoc3 say.py
+
+Help on module say:
+
+NAME
+    say - converts given text/phrase to speech (tts). supports different tts-engines.
+
+DESCRIPTION
+    Usage:
+    say [<msg>] [--engine=<tts-engine>]
+    
+    Options:
+        --engine=<str> TTS-engine to use {'google', 'espeak', 'festival'}
+                       [default: espeak]
+        -h, --help     Print this
+        --version      Print version
+    
+    Examples:
+        $ say "Hello world!" --engine espeak
+        $ say "Look Dave, I can see you're really upset about this." --engine espeak
+        $ say "This tts-engine sounds more human but requires to be online." --engine google
+
+FUNCTIONS
+    available_engines()
+    
+    say(msg, engine='espeak')
+    
+    version()
+
+DATA
+    AUDIO_PLAYER_BIN = 'ffplay -nodisp -autoexit'
+    DELETE_AUDIO_FILES = True
+    ENABLE_TTS_ONLINE = True
+    ENGINE_DEFAULT = 'espeak'
+    formatter = <logging.Formatter object>
+    handler = <StreamHandler <stderr> (NOTSET)>
+    logger = <Logger say (INFO)>
+
+VERSION
+    (0, 1, 24)
+
+FILE
+    /home/s3h10r/development/say/say.py
+```
+
+
 ```console
-$ ./ask --help
+$ say --help
+
+converts given text/phrase to speech (tts). supports different tts-engines.
+
+Usage:
+say [<msg>] [--engine=<tts-engine>]
+
+Options:
+    --engine=<str> TTS-engine to use {'google', 'espeak', 'festival'}
+                   [default: espeak]
+    -h, --help     Print this
+    --version      Print version
+
+Examples:
+    $ say "Hello world!" --engine espeak
+    $ say "Look Dave, I can see you're really upset about this." --engine espeak
+    $ say "This tts-engine sounds more human but requires to be online." --engine google
+```
+
+```console
+$ ask --help
+
+asks a yes/no question via audio (text-to-speech).
+returncode reflects answer in common unix-style (0 == yes/ok, 1 == nope)
+
 Usage:
 ask [<msg>] [--yes=<reply_yes>] [--no=<reply_no>] [--engine=<tts-engine>]
 
@@ -128,51 +196,36 @@ Options:
     --version      Print version
 
 Examples:
-    $ ask.py "Do you want to play a game?" && echo "Splendid! :)"
-    $ ask.py "Do you want to play a game?" --yes="Splendid, let's play!" --no="Okidoki. Maybe another time."
+    $ ask "Do you want to play a game?" && echo "Splendid! :)"
+    $ ask "Do you want to play a game?" --yes="Splendid, let's play!" --no="Okidoki. Maybe another time."
 ```
 
 ```console
-$ pydoc ./say.py
+$ xask --help
 
-Help on module say:
+**experimental** a graphical retro-style version of `ask` - because we can. :D
 
-NAME
-    say
+asks a yes/no question via audio (text-to-speech).
+returncode reflects answer in common unix-style (0 == yes/ok, 1 == nope)
 
-FILE
-    /home/s3h10r/development/say/say.py
+Usage:
+xask [<msg>] [--yes=<reply_yes>] [--no=<reply_no>] [--engine=<tts-engine>]
+     [--yes-exec=<yes-exec>] [--no-exec=<no-exec>]
 
-DESCRIPTION
-    lightweight tts for shell and scripts
-    -------------------------------------
-    
-    `say` makes
-    
-      * 90s retro style (espeak, festival, pico)
-      * modern (google speech api)
-    
-    text-to-speech (tts) accessible to your favorite shell
-    and is easy to use from within scripts.
+Options:
+    --engine=<str>   TTS-engine to use {'google', 'espeak', 'festival'}
+                     [default: espeak]
+    --no=<str>       Message for negative answer
+    --no-exec=<str>  execute given command by negative answer
+    --yes=<str>      Message for positive answer
+    --yes-exec=<str> execute given command by positive answer
 
-FUNCTIONS
-    available_engines()
-    
-    say(msg=None, engine='espeak')
-    
-    version()
+    -h, --help       Print this
+    --version        Print version
 
-DATA
-    AUDIO_PLAYER_BIN = 'mplayer'
-    DELETE_AUDIO_FILES = True
-    ENABLE_TTS_ONLINE = True
-    ENGINE_DEFAULT = 'espeak'
-    __version__ = '0.1.2'
-    formatter = <logging.Formatter object>
-    handler = <logging.StreamHandler object>
-    logger = <logging.Logger object>
-
-VERSION
-    0.1.2
+Examples:
+    $ xask "Do you want to play a game?" && echo "Splendid! :)"
+    $ xask "Do you want to play a game?" --yes="Splendid, let's play!" --no="Okidoki. Maybe another time."
+    $ xask "Reboot universe?" --yes="rebooting now." --yes-exec "init 6" --no="Ok. Maybe another time."
 ```
 

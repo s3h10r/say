@@ -1,8 +1,29 @@
 #!/usr/bin/env python3
 """
-a graphical retro-style version of `say`. because we can. :D
+**experimental** a graphical retro-style version of `ask` - because we can. :D
 
-**experimental**
+asks a yes/no question via audio (text-to-speech).
+returncode reflects answer in common unix-style (0 == yes/ok, 1 == nope)
+
+Usage:
+xask [<msg>] [--yes=<reply_yes>] [--no=<reply_no>] [--engine=<tts-engine>]
+     [--yes-exec=<yes-exec>] [--no-exec=<no-exec>]
+
+Options:
+    --engine=<str>   TTS-engine to use {'google', 'espeak', 'festival'}
+                     [default: espeak]
+    --no=<str>       Message for negative answer
+    --no-exec=<str>  execute given command by negative answer
+    --yes=<str>      Message for positive answer
+    --yes-exec=<str> execute given command by positive answer
+
+    -h, --help       Print this
+    --version        Print version
+
+Examples:
+    $ xask "Do you want to play a game?" && echo "Splendid! :)"
+    $ xask "Do you want to play a game?" --yes="Splendid, let's play!" --no="Okidoki. Maybe another time."
+    $ xask "Reboot universe?" --yes="rebooting now." --yes-exec "init 6" --no="Ok. Maybe another time."
 """
 import logging
 import os
@@ -10,23 +31,27 @@ import subprocess
 import sys
 import threading
 import time
+
+logger = logging.getLogger(__name__)
+#logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARNING)
+handler = logging.StreamHandler() # console-handler
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
+from docopt import docopt
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1' # no "Hello from the pygame community..." on stdout.
 try:
     import pygame
     import pygame.freetype
     from pygame.locals import *
 except ImportError:
-    print("whuuups. no pygame import possible?")
+    logger.critical("whuuups. no pygame import possible :/")
     sys.exit(1)
-from say import say
+from say import __version__, available_engines, ENGINE_DEFAULT, say
 
-_DEBUG = False
-__version__ = '0.1.0'
-
-# --- configure logging
-log = logging.getLogger(__name__)
-log.setLevel(logging.WARNING)
-#log.setLevel(logging.INFO)
+_VERBOSITY = 0
 
 WINDOW_SIZE = (1200, 800)
 FULLSCREEN=True # if set, the previously defined WINDOW_SIZE is ignored
@@ -67,20 +92,20 @@ class ThreadWithReturnValue(threading.Thread):
 def _init_screen(fullscreen=FULLSCREEN):
     global MARGIN
     global WINDOW_SIZE
-    log.info("_init_screen(fullscreen={})".format(fullscreen))
+    logger.info("_init_screen(fullscreen={})".format(fullscreen))
     pygame.init()
     pygame.mouse.set_visible(0)
     os.environ['SDL_VIDEO_CENTERED'] = '1'
     infoObj = pygame.display.Info()
     w, h = infoObj.current_w, infoObj.current_h
-    log.debug("w=%s h=%s" % (w,h))
+    logger.debug("w=%s h=%s" % (w,h))
     MARGIN = [WINDOW_SIZE[1] / 40, WINDOW_SIZE[0] / 20, WINDOW_SIZE[0] / 20, WINDOW_SIZE[1] / 40] # top, left, right, bottom
     if fullscreen:
         surface = pygame.display.set_mode((0,0), pygame.FULLSCREEN)
         WINDOW_SIZE = (w,h)
     else:
         surface = pygame.display.set_mode(WINDOW_SIZE)
-    pygame.display.set_caption('xsay')
+    pygame.display.set_caption('xask')
     return surface
 
 
@@ -114,11 +139,11 @@ def get_font_for_page(surface=None, page_size = (80,24), font = "FreeMono, Monos
         ref_size_x = font.get_rect(ref_char).width + 1 # WORKAROUND: add one pixel per char to be safe ?
         ref_size_y = font.get_sized_height() + 2
         if (ref_size_x * page_size[0] > width) or (ref_size_y * page_size[1] > height):
-            log.debug("fontsize={} : ref_char's size_x={} size_y={}".format(font_size, ref_size_x,ref_size_y))
+            logger.debug("fontsize={} : ref_char's size_x={} size_y={}".format(font_size, ref_size_x,ref_size_y))
             continue
         else: # got fitting fontsize
             running = False
-            log.info("found fontsize={} (font={}) suiting for page_size={} # ref_char's ('{}') size_x={} size_y={}".format(font_size, font_name, page_size, ref_char, ref_size_x,ref_size_y))
+            logger.info("found fontsize={} (font={}) suiting for page_size={} # ref_char's ('{}') size_x={} size_y={}".format(font_size, font_name, page_size, ref_char, ref_size_x,ref_size_y))
     return font
 
 
@@ -157,53 +182,50 @@ def word_wrap(surf = None, text = None, stop_pos = None, font = None, color=(0, 
     line_spacing = font.get_sized_height() + 2
     x, y = MARGIN[1], line_spacing + MARGIN[0]
     space = font.get_rect(' ')
-    #if stop_pos == 0:
-    #    return x,y
-
     i_pos = -1 # position in text-stream
     linebreaks = 0 # nr. of linebreaks in text-stream
     lines = text.split('\n')
     trimmed = False # if stop_pos is reached we set this to true and end the loop
     for i, line in enumerate(lines):
-        log.debug("line {} : '{}'".format(i, line))
+        logger.debug("line {} : '{}'".format(i, line))
         if len(line) > 0: # cause ''.split(' ') => ['']
             words = line.split(' ')
         else:
             words = []
-        log.debug("words of line {}: {}".format(line, words))
+        logger.debug("words of line {}: {}".format(line, words))
         for i2, word in enumerate(words):
-            log.debug("word_wrap-func line nr. {} word nr. {}".format(i,i2))
+            logger.debug("word_wrap-func line nr. {} word nr. {}".format(i,i2))
             if i2 < len(words) - 1:
                 if set(words[i2+1:]) != set(['']): # FIX-20011822-01: don't append whitespace if last word in line only followed by whitespaces
                     word += ' '
             if stop_pos != None and (i_pos + len(word) >= stop_pos):
-                log.debug("trimming word '{}' to pos length {} @ i_pos {}".format(word,stop_pos,i_pos))
+                logger.debug("trimming word '{}' to pos length {} @ i_pos {}".format(word,stop_pos,i_pos))
                 # trim word to pos length
                 too_long = (i_pos + len(word)-1) - stop_pos
                 tmpi = len(word) - too_long
                 word = word[:tmpi]
-                log.debug("trimmed to '{}' @ i_pos {}".format(word,i_pos))
+                logger.debug("trimmed to '{}' @ i_pos {}".format(word,i_pos))
                 trimmed=True
             if word=='' and not trimmed:
                 word = ' '
-                log.debug("word == ' ' @ i_pos: {}".format(i_pos))
+                logger.debug("word == ' ' @ i_pos: {}".format(i_pos))
             i_pos += len(word)
             bounds = font.get_rect(word)
-            log.debug("assume: {} <= {}".format(bounds.width,space.width * len(word)))
+            logger.debug("assume: {} <= {}".format(bounds.width,space.width * len(word)))
             if not (bounds.width <= (space.width * len(word))):
-                log.debug("WARNING ASSERTION WRONG. MAYBE WE CAN USE A TRESHOLD IN WHICH IT IS OKAY?")
-            log.debug('{}'.format(word))
+                logger.debug("WARNING ASSERTION WRONG. MAYBE WE CAN USE A TRESHOLD IN WHICH IT IS OKAY?")
+            logger.debug('{}'.format(word))
             if x + bounds.width > width:
                 x, y = MARGIN[1], y + line_spacing
             if x + bounds.width > width:
                 raise ValueError("word {} px to wide (x) for the surface".format(width - (x + bounds.width)))
             else:
-                log.debug("word width (x) fits into surface. {}px left".format(width - (x + bounds.width)))
+                logger.debug("word width (x) fits into surface. {}px left".format(width - (x + bounds.width)))
             if y + bounds.height - bounds.y > height:
-                log.critical("FIXME: text to long (y) for the surface")
+                logger.critical("FIXME: text to long (y) for the surface")
                 raise ValueError("text to long (y) for the surface")
             if render:
-                log.debug("render word '{}' on pos {},{}".format(word, x,y))
+                logger.debug("render word '{}' on pos {},{}".format(word, x,y))
                 font.render_to(surf, (x, y), None, color)
             x += bounds.width
             if trimmed:
@@ -215,17 +237,17 @@ def word_wrap(surf = None, text = None, stop_pos = None, font = None, color=(0, 
             x = MARGIN[1]; y += line_spacing
             i_pos += 1 # the '\n' of the .split()
             linebreaks += 1
-    log.info("word_wrap: i_pos {} lines {} linebreaks done {}".format(i_pos,len(lines),linebreaks))
-    log.info("word_wrap: i_pos={} stop_pos={} (should be same)".format(i_pos,stop_pos))
+    logger.info("word_wrap: i_pos {} lines {} linebreaks done {}".format(i_pos,len(lines),linebreaks))
+    logger.info("word_wrap: i_pos={} stop_pos={} (should be same)".format(i_pos,stop_pos))
     if stop_pos < len(text):
         #assert(i_pos == stop_pos)
         assert(abs(i_pos - stop_pos) < 2)
         if abs(i_pos - stop_pos) >= 2:
-            log.warning("word_wrap : abs(i_pos - stop_pos) is {} (but should be zero)".format(abs(i_pos - stop_pos)))
+            logger.warning("word_wrap : abs(i_pos - stop_pos) is {} (but should be zero)".format(abs(i_pos - stop_pos)))
     return x, y
 
 
-def show_message(surf=None, page="Do you want to play a game?", page_from_pos=0, show_cursor=True, wait_for_keypress=True):
+def _show_message(surf=None, page="Do you want to play a game?", page_from_pos=0, show_cursor=True, wait_for_keypress=True):
     """
     shows message (question) char by char (full-)screen
 
@@ -246,9 +268,6 @@ def show_message(surf=None, page="Do you want to play a game?", page_from_pos=0,
     while running:
         for event in pygame.event.get():
             # === event handler ===
-            #if event.type == pygame.QUIT:
-            #    running = False
-            #    break
             if event.type == KEYDOWN:
                 if (event.key == K_ESCAPE):
                     events = pygame.event.get()
@@ -292,59 +311,97 @@ def show_message(surf=None, page="Do you want to play a game?", page_from_pos=0,
                 cursor = Rect((x,y - cursor_height), (cursor_width, cursor_height)) # left, top, width, height
             if time.time() % 1 > 0.5: # blinking
                 pygame.draw.rect(surf, CURSOR_COLOR, cursor)
-                # --- TODO save a gif-animation for docs
-                if not page_in_transition:
-                    pygame.image.save(surf,'/tmp/screenshot_xsay.png') # save screenshot
+                # --- TODO save a screenshot or gif-animation for docs
+                #if not page_in_transition:
+                #    pygame.image.save(surf,'/tmp/screenshot_xask.png') # save screenshot
                 # ---
         clock.tick(30)
         pygame.display.update()
     return user_pressed_key
 
 
-def main():
-    msg = 'Do you want to play a game?'
-    if len(sys.argv) > 1:
-        msg = sys.argv[1]
-    else:
-        uinp = input("what should i say (default={}): ".format(msg))
-        if uinp:
-            msg = uinp
-    page = msg
-    surf = _init_screen(fullscreen=FULLSCREEN)
-    t1 = ThreadWithReturnValue(target=show_message,args=(surf,msg,))
-    t2 = threading.Thread(target=say,args=(msg,'espeak'))
+def xsay(msg,engine,surf=None,quit_if_done=False,timeout=None):
+    """
+    **experimental** a graphical retro-style version of `say`.
+    """
+    if not surf:
+        surf = _init_screen(fullscreen=FULLSCREEN)
+    t1 = ThreadWithReturnValue(target=_show_message,args=(surf,msg,))
+    t2 = threading.Thread(target=say,args=(msg,engine))
     t1.start()
     #time.sleep(0.5)
     t2.start()
     res = t1.join()
     t2.join()
-    if res in ['y','Y','j','J']:
-        reply='splendid! let us play dude!'
-        page_from_pos = len(msg)
-        msg += res + "\n" + reply
-        t1 = ThreadWithReturnValue(target=show_message,args=(surf,msg,page_from_pos,True,False))
-        t2 = threading.Thread(target=say,args=(reply,'espeak'))
-        t1.start()
-        t2.start()
-        res = t1.join()
-        t2.join()
+    if quit_if_done:
         pygame.quit()
-        subprocess.run(['./run_mt_bt.sh'])
+    return res
+
+
+def xask(msg,r_yes,r_no,engine,surf=None,quit_if_done=False):
+    key_pressed = xsay(msg,engine,surf,quit_if_done)
+    is_yes = False
+    if key_pressed in ['y','Y','j','J']: is_yes = True
+    if is_yes:
+        page_from_pos = len(msg)
+        if r_yes:
+            msg += key_pressed + "\n" + r_yes
+            t1 = ThreadWithReturnValue(target=_show_message,args=(surf,msg,page_from_pos,True,False))
+            t2 = threading.Thread(target=say,args=(r_yes,engine,))
+            t1.start()
+            t2.start()
+            res = t1.join()
+            t2.join()
     else:
-        reply = "okidoki, maybe another time?"
         page_from_pos = len(msg)
-        msg += res + "\n" + reply[:-1] + "."
-        t1 = ThreadWithReturnValue(target=show_message,args=(surf,msg,page_from_pos,True,False))
-        t2 = threading.Thread(target=say,args=(reply,'espeak'))
-        t1.start()
-        t2.start()
-        res = t1.join()
-        t2.join()
-        pygame.quit()
+        if r_no:
+            msg += key_pressed + "\n" + r_no[:-1] + "."
+            t1 = ThreadWithReturnValue(target=_show_message,args=(surf,msg,page_from_pos,True,False))
+            t2 = threading.Thread(target=say,args=(r_no,engine,))
+            t1.start()
+            t2.start()
+            res = t1.join()
+            t2.join()
+    return is_yes
+
+
+def main():
+    kwargs = docopt(__doc__, version=str('.'.join([str(el) for el in __version__])))
+    logger.debug("kwargs={}".format(kwargs))
+    if '<msg>' in kwargs:
+        msg = kwargs['<msg>']
+    reply_y = kwargs['--yes']
+    exec_y = kwargs['--yes-exec']
+    reply_n = kwargs['--no']
+    exec_n = kwargs['--no-exec']
+    engine = kwargs['--engine']
+    if not engine in available_engines():
+        engine=ENGINE_DEFAULT
+    if not msg:
+        if _VERBOSITY > 0:
+            msg = input("what should i say? : ")
+        else:
+            msg = input()
+    surf = _init_screen(fullscreen=FULLSCREEN)
+    is_yes = xask(msg,reply_y,reply_n,engine,surf,quit_if_done=False)
+    cmd=None
+    if is_yes:
+        if exec_y:
+            cmd = exec_y
+    else:
+        if exec_n:
+            cmd = exec_n
+    if cmd:
+        logger.info("executing '{}'".format(exec_n))
+        subprocess.run(['{}'].format(cmd))
+    return is_yes
 
 if __name__ == '__main__':
     s = time.perf_counter()
-    main()
+    is_yes = main()
     elapsed = time.perf_counter() - s
-    print(f"{__file__} executed in {elapsed:0.2f} seconds.")
-
+    logger.info(f"{__file__} executed in {elapsed:0.2f} seconds.")
+    yn_rc = 0
+    if not is_yes:
+        yn_rc = 1
+    sys.exit(yn_rc)

@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+converts given text/phrase to speech (tts). supports different tts-engines.
+
 Usage:
-ask [<msg>] [--engine=<tts-engine>]
+say [<msg>] [--engine=<tts-engine>]
 
 Options:
     --engine=<str> TTS-engine to use {'google', 'espeak', 'festival'}
@@ -11,9 +13,9 @@ Options:
     --version      Print version
 
 Examples:
-    $ say.py "Hello world!" --engine espeak
-    $ say.py "Look Dave, I can see you're really upset about this." --engine espeak
-    $ say.py "This tts-engine sounds more human but requires to be online." --engine google
+    $ say "Hello world!" --engine espeak
+    $ say "Look Dave, I can see you're really upset about this." --engine espeak
+    $ say "This tts-engine sounds more human but requires to be online." --engine google
 """
 import logging
 import os
