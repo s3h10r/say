@@ -31,7 +31,7 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-__version__ = (0,1,24)
+__version__ = (0,1,25)
 _VERBOSITY  = 0
 _ENGINES    = ['festival', 'espeak', 'dummy']
 ENGINE_DEFAULT=_ENGINES[1]
@@ -162,6 +162,7 @@ if __name__ == '__main__':
         msg = kwargs['<msg>']
     engine = kwargs['--engine']
     if not engine in available_engines():
+        logger.info("requested --engine='{}' not available. using engine '{}' instead".format(engine,ENGINE_DEFAULT))
         engine=ENGINE_DEFAULT
     if not msg:
         if _VERBOSITY > 0:
