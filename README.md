@@ -65,8 +65,13 @@ $ echo "Hi! It's $(date +%A) in week $(date +%U) of year $(date +%Y)" | ./say.py
 ``` 
 
 ```console
-$ ./ask.py "Do you want to play a game?" && echo "splendid! (:"
+$ ./ask.py "Do you want to play a game?" && echo "splendid! (:"                  
 ```
+
+```console
+$ ./ask.py "do you want to play a game?" --yes="splendid!" --no="okidoki. maybe another time." --engine="google"
+```
+
 
 <!--
 ```
@@ -104,6 +109,24 @@ for word in msg_tpl.substitute({'engine': 'crazy'}).split():
 
 help
 ====
+
+```console
+$ ./ask --help
+Usage:
+ask [<msg>] [--yes=<reply_yes>] [--no=<reply_no>] [--engine=<tts-engine>]
+
+Options:
+    --engine=<str> TTS-engine to use {'google', 'espeak', 'festival'}
+                   [default: espeak]
+    --no=<str>     Message for negative answer
+    --yes=<str>    Message for positive answer
+    -h, --help     Print this
+    --version      Print version
+
+Examples:
+    $ ask.py "Do you want to play a game?" && echo "Splendid! :)"
+    $ ask.py "Do you want to play a game?" --yes="Splendid, let's play!" --no="Okidoki. Maybe another time."
+```
 
 ```console
 $ pydoc ./say.py
