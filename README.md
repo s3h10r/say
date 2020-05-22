@@ -1,4 +1,5 @@
-# say - lightweight tts for shell & scripts
+say - lightweight tts for shell & scripts
+=========================================
 
 `say` makes 
 
@@ -6,7 +7,10 @@
   * modern (google speech api)
 
 text-to-speech (tts) accessible to your favorite shell 
-and is easy to use from within scripts.
+and is easy to use from within scripts. 
+
+it provides commands which can be used in shellscripts and 
+exports functions wich are usable in python.
 
 
 installation
@@ -61,11 +65,11 @@ $ echo "Have fun!" | ./say.py
 ``` 
 
 ```console
-$ echo "Hi! It's $(date +%A) in week $(date +%U) of year $(date +%Y)" | ./say.py
+$ echo "Hi! It's $(date +%A) in week $(date +%U) of year $(date +%Y)" | ./say.py --engine google
 ``` 
 
 ```console
-$ ./ask.py "Do you want to play a game?" && echo "splendid! (:"                  
+$ ./ask.py "Do you want to play a game?" && echo "splendid! (:"
 ```
 
 ```console

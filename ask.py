@@ -67,6 +67,21 @@ class _GetchWindows:
 
 getch = _Getch()
 
+def ask(question,reply_y,reply_n,engine=ENGINE_DEFAULT):
+    """
+    """
+    say(msg,engine)
+    uinp = getch()
+    logger.debug("answer was : {}".format(uinp))
+    if uinp in ['y','Y','j','J']:
+        if reply_y:
+            say(reply_y,engine)
+            return 0
+    else:
+        if reply_n:
+            say(reply_n,engine)
+        return 1
+
 
 if __name__ == '__main__':
     kwargs = docopt(__doc__, version=str('.'.join([str(el) for el in __version__])))
@@ -80,15 +95,7 @@ if __name__ == '__main__':
         engine=ENGINE_DEFAULT
     if not msg:
         msg = input("what should i ask? : ".format(msg))
-    say(msg,engine) #TODO better using a Thread here
-    uinp = getch()
-    logger.debug("answer was : {}".format(uinp))
-    if uinp in ['y','Y','j','J']:
-        if reply_y:
-            say(reply_y,engine)
-        sys.exit(0)
-    else:
-        if reply_n:
-            say(reply_n,engine)
-        sys.exit(1)
+
+    yn_rc = ask(msg,reply_y,reply_n,engine)
+    sys.exit(yn_rc)
 
