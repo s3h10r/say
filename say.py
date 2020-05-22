@@ -24,7 +24,7 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-__version__ = '0.1.2'
+__version__ = (0,1,22)
 _VERBOSITY  = 0
 _ENGINES    = ['festival', 'espeak', 'dummy']
 ENGINE_DEFAULT=_ENGINES[1]
