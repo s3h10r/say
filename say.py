@@ -1,21 +1,26 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-lightweight tts for shell and scripts
--------------------------------------
+Usage:
+ask [<msg>] [--engine=<tts-engine>]
 
-`say` makes
+Options:
+    --engine=<str> TTS-engine to use {'google', 'espeak', 'festival'}
+                   [default: espeak]
+    -h, --help     Print this
+    --version      Print version
 
-  * 90s retro style (espeak, festival, pico)
-  * modern (google speech api)
-
-text-to-speech (tts) accessible to your favorite shell
-and is easy to use from within scripts.
+Examples:
+    $ say.py "Hello world!" --engine espeak
+    $ say.py "Look Dave, I can see you're really upset about this." --engine espeak
+    $ say.py "This tts-engine sounds more human but requires to be online." --engine google
 """
 import logging
 import os
 import sys
 import subprocess
 import tempfile
+from docopt import docopt
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -24,7 +29,7 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-__version__ = (0,1,22)
+__version__ = (0,1,24)
 _VERBOSITY  = 0
 _ENGINES    = ['festival', 'espeak', 'dummy']
 ENGINE_DEFAULT=_ENGINES[1]
@@ -119,7 +124,10 @@ def _play_audio(file, audio_player=AUDIO_PLAYER_BIN):
         return False
 
 
-def say(msg=None, engine=ENGINE_DEFAULT):
+def say(msg, engine=ENGINE_DEFAULT):
+    """
+    """
+    assert(isinstance(msg,str))
     fn_audio, tts_cmd = None, None
     if engine not in _ENGINES:
         raise Exception("sorry, engine '{}' not available.".format(engine))
@@ -146,15 +154,16 @@ if __name__ == '__main__':
     if not _check_requirements():
         logger.critical('_check_requirements() failed.')
         sys.exit(-1)
-    msg = 'Do you want to play a game?'
-    engine = ENGINE_DEFAULT # **TODO** support cli-arg --engine <engine-name>
-    if len(sys.argv) > 1:
-        msg = sys.argv[1]
-    else:
+    kwargs = docopt(__doc__, version=str('.'.join([str(el) for el in __version__])))
+    logger.debug("kwargs={}".format(kwargs))
+    if '<msg>' in kwargs:
+        msg = kwargs['<msg>']
+    engine = kwargs['--engine']
+    if not engine in available_engines():
+        engine=ENGINE_DEFAULT
+    if not msg:
         if _VERBOSITY > 0:
-            uinp = input("what should i say (default={}): ".format(msg))
+            msg = input("what should i say? : ")
         else:
-            uinp = input()
-        if uinp:
-            msg = uinp
-    say(msg=msg,engine=engine)
+            msg = input()
+    say(msg,engine)
